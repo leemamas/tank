@@ -15,6 +15,7 @@ class BaseItem(Sprite):
 class MainGame():
     window = None
     my_tank = None
+    reward = None
     enemyTankList = []
     enemyTankCount = 5
     myBulletList = []
@@ -58,6 +59,8 @@ class MainGame():
             self.displayMyBullet()
             self.displayEnemyBullet()
             self.displyaExplode()
+            if MainGame.reward:
+                self.displayReward()
 
             if MainGame.my_tank and MainGame.my_tank.live:
                 if not MainGame.my_tank.stop:
@@ -69,13 +72,18 @@ class MainGame():
 
     # 产生墙壁
     def productWall(self):
-        for i in range(30):
-            wall = Wall(i * 24, 200,'iron')
+        for i in range(10):
+            wall = Wall('iron')
             MainGame.wallList.append(wall)
+
+
+    # 产生奖励
+    def productReward(self):
+        MainGame.reward = Reward()
 
     # 创建友军
     def productOwn(self):
-        MainGame.my_tank = MyTank(400, 320)
+        MainGame.my_tank = MyTank(400, 550)
         music = Music('music/add.wav')
         music.play()
 
@@ -91,10 +99,15 @@ class MainGame():
     # 显示墙
     def displayWall(self):
         for wall in MainGame.wallList:
+
             if wall.live:
                 wall.display()
             else:
                 MainGame.wallList.remove(wall)
+
+    # 显示奖励
+    def displayReward(self):
+        MainGame.reward.display()
 
     # 展示敌军
     def displayEnemy(self):
@@ -181,6 +194,10 @@ class MainGame():
                     # 增加敌军
                     elif event.key == pygame.K_F2:
                         self.productEnemy(1)
+                    # 快捷添加奖励
+                    elif event.key == pygame.K_F3:
+                        self.productReward()
+
                     elif event.key == pygame.K_SPACE:
                         # 限制发射子弹数
                         if len(MainGame.myBulletList) < 3:
@@ -199,14 +216,18 @@ class MainGame():
 
 
 class Tank(BaseItem):
-    def __init__(self, left, top):
-        self.images = {
-            'U': pygame.image.load('images/u.png'),
-            'D': pygame.image.load('images/d.png'),
-            'L': pygame.image.load('images/l.png'),
-            'R': pygame.image.load('images/r.png')
-        }
+    myTankImage = r"images/tank_T1_0.png"
 
+    def __init__(self, left, top):
+
+        self.mytank = pygame.image.load(self.myTankImage).convert_alpha()
+
+        self.images = {
+            'U': self.mytank.subsurface((0, 0), (48, 48)),
+            'D': self.mytank.subsurface((48, 48), (48, 48)),
+            'L': self.mytank.subsurface((48, 96), (48, 48)),
+            'R': self.mytank.subsurface((48, 144), (48, 48))
+        }
         self.direction = 'U'
         self.image = self.images[self.direction]
         self.rect = self.image.get_rect()
@@ -256,6 +277,7 @@ class Tank(BaseItem):
 
 # 友军
 class MyTank(Tank):
+
     def __init__(self, left, top):
         super(MyTank, self).__init__(left, top)
 
@@ -267,13 +289,17 @@ class MyTank(Tank):
 
 # 敌军
 class EnemyTank(Tank):
+    enemyImage = r"images/enemy_1_0.png"
+
     def __init__(self, left, top, speed):
         super(EnemyTank, self).__init__(left, top)
+        self.enemy = pygame.image.load(self.enemyImage).convert_alpha()
+
         self.images = {
-            'U': pygame.image.load('images/u.png'),
-            'D': pygame.image.load('images/d.png'),
-            'L': pygame.image.load('images/l.png'),
-            'R': pygame.image.load('images/r.png')
+            'U': self.enemy.subsurface((0, 0), (48, 48)),
+            'D': self.enemy.subsurface((48, 48), (48, 48)),
+            'L': self.enemy.subsurface((48, 96), (48, 48)),
+            'R': self.enemy.subsurface((48, 144), (48, 48))
         }
         self.direction = self.ranDirection()
         self.image = self.images[self.direction]
@@ -399,15 +425,20 @@ class Wall():
     brickImage = r"images\brick.png"
     ironImage = r"images\iron.png"
 
-    def __init__(self, left, top, type):
-        print('type:',type)
+    # def __init__(self, left, top, type):
+    def __init__(self, type):
         if type == 'brick':
             self.image = pygame.image.load(self.brickImage)
         elif type == 'iron':
             self.image = pygame.image.load(self.ironImage)
         self.rect = self.image.get_rect()
-        self.rect.left = left
-        self.rect.top = top
+
+        self.rect.left=random.randint(1,20)*24
+        self.rect.top = random.randint(1,4)*100
+
+
+        # self.rect.left = left
+        # self.rect.top = top
         self.live = True
 
     def display(self):
@@ -436,6 +467,32 @@ class Explode():
         else:
             self.live = False
             self.step = 0
+
+
+# 奖励
+class Reward():
+    boomImage = r'images/reward_boom.png'
+    levelImage = r'images/reward_level.png'
+    lifeImage = r'images/reward_life.png'
+
+    def __init__(self):
+        self.boom = pygame.image.load(self.boomImage).convert_alpha()
+        self.level = pygame.image.load(self.levelImage).convert_alpha()
+        self.life = pygame.image.load(self.lifeImage).convert_alpha()
+
+        self.kind = random.choice([1, 2, 3])
+        if self.kind == 1:
+            self.image = self.boom
+        elif self.kind == 2:
+            self.image = self.level
+        elif self.kind == 3:
+            self.image = self.life
+
+        self.rect = self.image.get_rect()
+        self.rect.left = self.rect.top = random.randint(100, 500)
+
+    def display(self):
+        MainGame.window.blit(self.image, self.rect)
 
 
 class Music():
